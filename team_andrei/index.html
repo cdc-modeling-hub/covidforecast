@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +41,7 @@
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
             padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: flex-end;
             align-items: center;
@@ -70,11 +71,13 @@
             width: 40px;
             height: 24px;
         }
+
         .switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
+
         .slider {
             position: absolute;
             cursor: pointer;
@@ -86,6 +89,7 @@
             transition: .4s;
             border-radius: 24px;
         }
+
         .slider:before {
             position: absolute;
             content: "";
@@ -97,10 +101,12 @@
             transition: .4s;
             border-radius: 50%;
         }
-        input:checked + .slider {
+
+        input:checked+.slider {
             background-color: #2196F3;
         }
-        input:checked + .slider:before {
+
+        input:checked+.slider:before {
             transform: translateX(16px);
         }
 
@@ -127,7 +133,7 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
         }
 
         .figure-title {
@@ -143,7 +149,7 @@
             position: relative;
             margin-bottom: 20px;
         }
-        
+
         .chart-panel:last-child {
             margin-bottom: 0;
         }
@@ -153,13 +159,17 @@
             font-size: 11px;
             fill: #666;
         }
-        .axis path, .axis line {
+
+        .axis path,
+        .axis line {
             stroke: #ddd;
         }
+
         .grid line {
             stroke: #eee;
-            stroke-dasharray: 2,2;
+            stroke-dasharray: 2, 2;
         }
+
         .reference-line {
             stroke: #888;
             stroke-width: 1.5;
@@ -174,7 +184,7 @@
             border-radius: 4px;
             padding: 10px;
             pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             font-size: 12px;
             font-family: var(--font-zh);
             opacity: 0;
@@ -183,17 +193,21 @@
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
+
         .tooltip-table {
             border-collapse: collapse;
         }
+
         .tooltip-table td {
             padding: 2px 6px;
         }
+
         .tooltip-table td:first-child {
             font-weight: 600;
             color: #555;
             text-align: right;
         }
+
         .tooltip-table td:last-child {
             text-align: left;
         }
@@ -207,7 +221,7 @@
             color: #777;
             text-align: center;
         }
-        
+
         .panel-label {
             font-family: var(--font-zh);
             font-weight: bold;
@@ -216,410 +230,416 @@
         }
     </style>
 </head>
+
 <body>
 
-<!-- Setup Info for Deployment -->
-<div class="deploy-info">
-    <!-- 
+    <!-- Setup Info for Deployment -->
+    <div class="deploy-info">
+        <!-- 
     HOW TO DEPLOY ON GITHUB PAGES:
     1. Place this index.html and 'Rt_ICU_based-RW_gaussian_order-1.csv' in the root of your repository.
     2. In GitHub Repo Settings -> Pages -> Deploy from branch -> Select 'main' (or master) and folder '/ (root)'.
     3. Save and wait for the action to build.
     -->
-</div>
-
-<!-- Toolbar -->
-<div class="toolbar">
-    <div class="toolbar-group">
-        <label>日期範圍:</label>
-        <input type="date" id="start-date">
-        <span>-</span>
-        <input type="date" id="end-date">
-    </div>
-    <div class="toolbar-group">
-        <label class="switch">
-            <input type="checkbox" id="uncertainty-toggle" checked>
-            <span class="slider"></span>
-        </label>
-        <label for="uncertainty-toggle">顯示不確定區間</label>
-    </div>
-</div>
-
-<!-- Main Dashboard -->
-<div class="dashboard-container">
-    
-    <!-- Figure 1: Onset Based -->
-    <div class="figure-card">
-        <div class="figure-title">發病日基準：病例與死亡（右軸：Rt，含不確定區間）</div>
-        <div id="fig1-panel-cases" class="chart-panel"></div>
-        <div id="fig1-panel-deaths" class="chart-panel"></div>
     </div>
 
-    <!-- Figure 2: Reported Based -->
-    <div class="figure-card">
-        <div class="figure-title">通報日基準：通報病例與通報死亡（右軸：Rt，含不確定區間）</div>
-        <div id="fig2-panel-cases" class="chart-panel"></div>
-        <div id="fig2-panel-deaths" class="chart-panel"></div>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <label>日期範圍:</label>
+            <input type="date" id="start-date">
+            <span>-</span>
+            <input type="date" id="end-date">
+        </div>
+        <div class="toolbar-group">
+            <label class="switch">
+                <input type="checkbox" id="uncertainty-toggle" checked>
+                <span class="slider"></span>
+            </label>
+            <label for="uncertainty-toggle">顯示不確定區間</label>
+        </div>
     </div>
 
-</div>
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
 
-<!-- Tooltip Container -->
-<div id="tooltip" class="tooltip"></div>
+        <!-- Figure 1: Onset Based -->
+        <div class="figure-card">
+            <div class="figure-title">發病日基準：病例與死亡（右軸：Rt，含不確定區間）</div>
+            <div id="fig1-panel-cases" class="chart-panel"></div>
+            <div id="fig1-panel-deaths" class="chart-panel"></div>
+        </div>
 
-<script>
-    // Configuration
-    const DATA_URL = "./Rt_ICU_based-RW_gaussian_order-1.csv";
-    const MARGIN = {top: 30, right: 60, bottom: 30, left: 60};
-    const HEIGHT = 250; 
-    
-    // Global State
-    let rawData = [];
-    let state = {
-        showUncertainty: true,
-        dateRange: [null, null], // [Date, Date]
-    };
+        <!-- Figure 2: Reported Based -->
+        <div class="figure-card">
+            <div class="figure-title">通報日基準：通報病例與通報死亡（右軸：Rt，含不確定區間）</div>
+            <div id="fig2-panel-cases" class="chart-panel"></div>
+            <div id="fig2-panel-deaths" class="chart-panel"></div>
+        </div>
 
-    // Color Maps
-    const COLORS = {
-        cases: "#4e79a7",
-        deaths: "#e15759",
-        rt: "#76b7b2"
-    };
+    </div>
 
-    // Helper: Parse CSV
-    const parseRow = (d) => {
-        d.d = new Date(d.d);
-        d.median = +d.median;
-        d.lower = +d.lower;
-        d.upper = +d.upper;
-        return d;
-    };
+    <!-- Tooltip Container -->
+    <div id="tooltip" class="tooltip"></div>
 
-    // helper: Get width dynamically
-    const getChartWidth = (containerId) => {
-        const container = document.getElementById(containerId);
-        return container.clientWidth;
-    };
+    <script>
+        // Configuration
+        const DATA_URL = "./Rt_ICU_based-RW_gaussian_order-1.csv";
+        const MARGIN = { top: 30, right: 60, bottom: 30, left: 60 };
+        const HEIGHT = 250;
 
-    // Main: Load Data
-    d3.csv(DATA_URL).then(data => {
-        rawData = data.map(parseRow).sort((a, b) => a.d - b.d);
-        
-        // Initialize Date Inputs
-        const dates = rawData.map(d => d.d);
-        const minDate = d3.min(dates);
-        const maxDate = d3.max(dates);
-        
-        const dateInputFormat = d3.timeFormat("%Y-%m-%d");
-        const startInput = document.getElementById('start-date');
-        const endInput = document.getElementById('end-date');
-        
-        startInput.value = dateInputFormat(minDate);
-        endInput.value = dateInputFormat(maxDate);
-        startInput.min = dateInputFormat(minDate);
-        startInput.max = dateInputFormat(maxDate);
-        endInput.min = dateInputFormat(minDate);
-        endInput.max = dateInputFormat(maxDate);
+        // Global State
+        let rawData = [];
+        let state = {
+            showUncertainty: true,
+            dateRange: [null, null], // [Date, Date]
+        };
 
-        state.dateRange = [minDate, maxDate];
+        // Color Maps
+        const COLORS = {
+            cases: "#4e79a7",
+            deaths: "#e15759",
+            rt: "#76b7b2"
+        };
 
-        // Group data for easier access
-        const grouped = d3.group(rawData, d => d.var);
-        
-        // Draw Initial
-        renderAll(grouped);
+        // Helper: Parse CSV
+        const parseRow = (d) => {
+            d.d = new Date(d.d);
+            d.median = +d.median;
+            d.lower = +d.lower;
+            d.upper = +d.upper;
+            return d;
+        };
 
-        // Event Listeners
-        document.getElementById('uncertainty-toggle').addEventListener('change', (e) => {
-            state.showUncertainty = e.target.checked;
+        // helper: Get width dynamically
+        const getChartWidth = (containerId) => {
+            const container = document.getElementById(containerId);
+            return container.clientWidth;
+        };
+
+        // Main: Load Data
+        d3.csv(DATA_URL).then(data => {
+            rawData = data.map(parseRow).sort((a, b) => a.d - b.d);
+
+            // Initialize Date Inputs
+            // Initialize Date Inputs based on Rt availability only
+            const rtData = rawData.filter(d => d.var === 'Rt');
+            const rtDates = rtData.map(d => d.d);
+            const minDate = d3.min(rtDates);
+            const maxDate = d3.max(rtDates);
+
+            const dateInputFormat = d3.timeFormat("%Y-%m-%d");
+            const startInput = document.getElementById('start-date');
+            const endInput = document.getElementById('end-date');
+
+            startInput.value = dateInputFormat(minDate);
+            endInput.value = dateInputFormat(maxDate);
+            // Set min/max attributes for inputs based on *all* data to allow expansion if user wants, 
+            // or restrict them? The prompt says "Only show the date with available Rt", 
+            // which implies strictly limiting the view. Let's strictly limit the inputs too for clarity.
+            startInput.min = dateInputFormat(minDate);
+            startInput.max = dateInputFormat(maxDate);
+            endInput.min = dateInputFormat(minDate);
+            endInput.max = dateInputFormat(maxDate);
+
+            state.dateRange = [minDate, maxDate];
+
+            // Group data for easier access
+            const grouped = d3.group(rawData, d => d.var);
+
+            // Draw Initial
             renderAll(grouped);
-        });
 
-        const updateDate = () => {
-            const startStr = document.getElementById('start-date').value;
-            const endStr = document.getElementById('end-date').value;
-            if(startStr && endStr) {
-                state.dateRange = [new Date(startStr), new Date(endStr)];
+            // Event Listeners
+            document.getElementById('uncertainty-toggle').addEventListener('change', (e) => {
+                state.showUncertainty = e.target.checked;
                 renderAll(grouped);
+            });
+
+            const updateDate = () => {
+                const startStr = document.getElementById('start-date').value;
+                const endStr = document.getElementById('end-date').value;
+                if (startStr && endStr) {
+                    state.dateRange = [new Date(startStr), new Date(endStr)];
+                    renderAll(grouped);
+                }
+            };
+
+            startInput.addEventListener('change', updateDate);
+            endInput.addEventListener('change', updateDate);
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                renderAll(grouped);
+            });
+
+        }).catch(err => {
+            console.error("Error loading CSV:", err);
+            document.querySelector('.dashboard-container').innerHTML = `<p style="text-align:center; color:red;">Failed to load data: ${err.message}. Ensure CSV is in the root directory.</p>`;
+        });
+
+        function renderAll(groupedData) {
+            // Filter Data by Date
+            const filterByDate = (rows) => {
+                if (!rows) return [];
+                return rows.filter(d => d.d >= state.dateRange[0] && d.d <= state.dateRange[1]);
+            };
+
+            const plotData = {
+                Rt: filterByDate(groupedData.get('Rt')),
+                cases_predicted: filterByDate(groupedData.get('cases_predicted')),
+                deaths_predicted: filterByDate(groupedData.get('deaths_predicted')),
+                cases_reported: filterByDate(groupedData.get('cases_reported_forecasted')),
+                deaths_reported: filterByDate(groupedData.get('deaths_reported_forecasted')),
+            };
+
+            // Clear containers
+            ['fig1-panel-cases', 'fig1-panel-deaths', 'fig2-panel-cases', 'fig2-panel-deaths'].forEach(id => {
+                document.getElementById(id).innerHTML = "";
+            });
+
+            // Figure 1
+            drawPanel('fig1-panel-cases', plotData.cases_predicted, plotData.Rt, {
+                leftTitle: "病例（發病日）",
+                leftColor: COLORS.cases
+            });
+            drawPanel('fig1-panel-deaths', plotData.deaths_predicted, plotData.Rt, {
+                leftTitle: "死亡（發病日）",
+                leftColor: COLORS.deaths
+            });
+
+            // Figure 2
+            drawPanel('fig2-panel-cases', plotData.cases_reported, plotData.Rt, {
+                leftTitle: "通報病例（通報日）",
+                leftColor: COLORS.cases
+            });
+            drawPanel('fig2-panel-deaths', plotData.deaths_reported, plotData.Rt, {
+                leftTitle: "通報死亡（通報日）",
+                leftColor: COLORS.deaths
+            });
+        }
+
+        function drawPanel(containerId, leftData, rtData, config) {
+            if (!leftData || !rtData || leftData.length === 0) return;
+
+            const width = getChartWidth(containerId);
+            const innerWidth = width - MARGIN.left - MARGIN.right;
+            const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
+
+            const svg = d3.select(`#${containerId}`)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", HEIGHT)
+                .append("g")
+                .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+
+            // Scales
+            const xScale = d3.scaleTime()
+                .domain(d3.extent(leftData, d => d.d))
+                .range([0, innerWidth]);
+
+            const yLeftMax = d3.max(leftData, d => d.upper) * 1.1 || 10;
+            const yLeftScale = d3.scaleLinear()
+                .domain([0, yLeftMax])
+                .range([innerHeight, 0]);
+
+            const yRightExtent = [
+                d3.min(rtData, d => d.lower) > 1 ? 0.5 : Math.min(0, d3.min(rtData, d => d.lower)),
+                d3.max(rtData, d => d.upper) * 1.1 || 2
+            ];
+            // Ensure yRight includes 1 clearly
+            if (yRightExtent[0] > 0.8) yRightExtent[0] = 0;
+
+            const yRightScale = d3.scaleLinear()
+                .domain(yRightExtent)
+                .range([innerHeight, 0]);
+
+            // Axes
+            const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%m/%d"));
+            const yAxisLeft = d3.axisLeft(yLeftScale).ticks(5);
+            const yAxisRight = d3.axisRight(yRightScale).ticks(5);
+
+            // Gridlines
+            const makeYGrid = () => d3.axisLeft(yLeftScale).ticks(5);
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("opacity", 0.3)
+                .call(makeYGrid()
+                    .tickSize(-innerWidth)
+                    .tickFormat("")
+                );
+
+            // Draw Axes
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${innerHeight})`)
+                .call(xAxis);
+
+            svg.append("g")
+                .attr("class", "axis")
+                .call(yAxisLeft)
+                .append("text")
+                .attr("fill", config.leftColor)
+                .attr("transform", "rotate(-90)")
+                .attr("y", -45)
+                .attr("dy", "0.71em")
+                .style("text-anchor", "end")
+                .style("font-size", "12px")
+                .text(config.leftTitle.split("（")[0]); // Simplified label
+
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(${innerWidth},0)`)
+                .call(yAxisRight)
+                .append("text")
+                .attr("fill", COLORS.rt)
+                .attr("transform", "rotate(-90)")
+                .attr("y", 35)
+                .attr("dy", "0.71em")
+                .style("text-anchor", "end")
+                .style("font-size", "12px")
+                .text("Rt");
+
+            // Panel Title (Inline)
+            svg.append("text")
+                .attr("x", 10)
+                .attr("y", -10)
+                .attr("class", "panel-label")
+                .text(config.leftTitle);
+
+
+            // --- Generators ---
+
+            const areaLeft = d3.area()
+                .x(d => xScale(d.d))
+                .y0(d => yLeftScale(d.lower))
+                .y1(d => yLeftScale(d.upper));
+
+            const lineLeft = d3.line()
+                .x(d => xScale(d.d))
+                .y(d => yLeftScale(d.median));
+
+            const areaRight = d3.area()
+                .x(d => xScale(d.d))
+                .y0(d => yRightScale(d.lower))
+                .y1(d => yRightScale(d.upper));
+
+            const lineRight = d3.line()
+                .x(d => xScale(d.d))
+                .y(d => yRightScale(d.median));
+
+
+            // --- Draw Data ---
+
+            // 1. Left Data (Cases/Deaths)
+            if (state.showUncertainty) {
+                svg.append("path")
+                    .datum(leftData)
+                    .attr("fill", config.leftColor)
+                    .attr("fill-opacity", 0.2)
+                    .attr("d", areaLeft);
             }
-        };
 
-        startInput.addEventListener('change', updateDate);
-        endInput.addEventListener('change', updateDate);
-
-        // Handle Resize
-        window.addEventListener('resize', () => {
-             renderAll(grouped);
-        });
-
-    }).catch(err => {
-        console.error("Error loading CSV:", err);
-        document.querySelector('.dashboard-container').innerHTML = `<p style="text-align:center; color:red;">Failed to load data: ${err.message}. Ensure CSV is in the root directory.</p>`;
-    });
-
-    function renderAll(groupedData) {
-        // Filter Data by Date
-        const filterByDate = (rows) => {
-            if (!rows) return [];
-            return rows.filter(d => d.d >= state.dateRange[0] && d.d <= state.dateRange[1]);
-        };
-
-        const plotData = {
-            Rt: filterByDate(groupedData.get('Rt')),
-            cases_predicted: filterByDate(groupedData.get('cases_predicted')),
-            deaths_predicted: filterByDate(groupedData.get('deaths_predicted')),
-            cases_reported: filterByDate(groupedData.get('cases_reported_forecasted')),
-            deaths_reported: filterByDate(groupedData.get('deaths_reported_forecasted')),
-        };
-
-        // Clear containers
-        ['fig1-panel-cases', 'fig1-panel-deaths', 'fig2-panel-cases', 'fig2-panel-deaths'].forEach(id => {
-            document.getElementById(id).innerHTML = "";
-        });
-
-        // Figure 1
-        drawPanel('fig1-panel-cases', plotData.cases_predicted, plotData.Rt, {
-            leftTitle: "病例（發病日）",
-            leftColor: COLORS.cases
-        });
-        drawPanel('fig1-panel-deaths', plotData.deaths_predicted, plotData.Rt, {
-            leftTitle: "死亡（發病日）",
-            leftColor: COLORS.deaths
-        });
-
-        // Figure 2
-        drawPanel('fig2-panel-cases', plotData.cases_reported, plotData.Rt, {
-            leftTitle: "通報病例（通報日）",
-            leftColor: COLORS.cases
-        });
-        drawPanel('fig2-panel-deaths', plotData.deaths_reported, plotData.Rt, {
-            leftTitle: "通報死亡（通報日）",
-            leftColor: COLORS.deaths
-        });
-    }
-
-    function drawPanel(containerId, leftData, rtData, config) {
-        if (!leftData || !rtData || leftData.length === 0) return;
-
-        const width = getChartWidth(containerId);
-        const innerWidth = width - MARGIN.left - MARGIN.right;
-        const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
-
-        const svg = d3.select(`#${containerId}`)
-            .append("svg")
-            .attr("width", width)
-            .attr("height", HEIGHT)
-            .append("g")
-            .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
-
-        // Scales
-        const xScale = d3.scaleTime()
-            .domain(d3.extent(leftData, d => d.d))
-            .range([0, innerWidth]);
-
-        const yLeftMax = d3.max(leftData, d => d.upper) * 1.1 || 10;
-        const yLeftScale = d3.scaleLinear()
-            .domain([0, yLeftMax])
-            .range([innerHeight, 0]);
-
-        const yRightExtent = [
-            d3.min(rtData, d => d.lower) > 1 ? 0.5 : Math.min(0, d3.min(rtData, d => d.lower)), 
-            d3.max(rtData, d => d.upper) * 1.1 || 2
-        ];
-        // Ensure yRight includes 1 clearly
-        if (yRightExtent[0] > 0.8) yRightExtent[0] = 0;
-        
-        const yRightScale = d3.scaleLinear()
-            .domain(yRightExtent)
-            .range([innerHeight, 0]);
-
-        // Axes
-        const xAxis = d3.axisBottom(xScale).ticks(6).tickFormat(d3.timeFormat("%m/%d"));
-        const yAxisLeft = d3.axisLeft(yLeftScale).ticks(5);
-        const yAxisRight = d3.axisRight(yRightScale).ticks(5);
-
-        // Gridlines
-        const makeYGrid = () => d3.axisLeft(yLeftScale).ticks(5);
-        svg.append("g")
-            .attr("class", "grid")
-            .attr("opacity", 0.3)
-            .call(makeYGrid()
-                .tickSize(-innerWidth)
-                .tickFormat("")
-            );
-
-        // Draw Axes
-        svg.append("g")
-            .attr("class", "axis")
-            .attr("transform", `translate(0,${innerHeight})`)
-            .call(xAxis);
-
-        svg.append("g")
-            .attr("class", "axis")
-            .call(yAxisLeft)
-            .append("text")
-            .attr("fill", config.leftColor)
-            .attr("transform", "rotate(-90)")
-            .attr("y", -45)
-            .attr("dy", "0.71em")
-            .style("text-anchor", "end")
-            .style("font-size", "12px")
-            .text(config.leftTitle.split("（")[0]); // Simplified label
-
-        svg.append("g")
-            .attr("class", "axis")
-            .attr("transform", `translate(${innerWidth},0)`)
-            .call(yAxisRight)
-            .append("text")
-            .attr("fill", COLORS.rt)
-            .attr("transform", "rotate(-90)")
-            .attr("y", 35)
-            .attr("dy", "0.71em")
-            .style("text-anchor", "end")
-            .style("font-size", "12px")
-            .text("Rt");
-
-        // Panel Title (Inline)
-        svg.append("text")
-            .attr("x", 10)
-            .attr("y", -10)
-            .attr("class", "panel-label")
-            .text(config.leftTitle);
-
-
-        // --- Generators ---
-        
-        const areaLeft = d3.area()
-            .x(d => xScale(d.d))
-            .y0(d => yLeftScale(d.lower))
-            .y1(d => yLeftScale(d.upper));
-        
-        const lineLeft = d3.line()
-            .x(d => xScale(d.d))
-            .y(d => yLeftScale(d.median));
-
-        const areaRight = d3.area()
-            .x(d => xScale(d.d))
-            .y0(d => yRightScale(d.lower))
-            .y1(d => yRightScale(d.upper));
-
-        const lineRight = d3.line()
-            .x(d => xScale(d.d))
-            .y(d => yRightScale(d.median));
-
-
-        // --- Draw Data ---
-
-        // 1. Left Data (Cases/Deaths)
-        if (state.showUncertainty) {
             svg.append("path")
                 .datum(leftData)
-                .attr("fill", config.leftColor)
-                .attr("fill-opacity", 0.2)
-                .attr("d", areaLeft);
-        }
-        
-        svg.append("path")
-            .datum(leftData)
-            .attr("fill", "none")
-            .attr("stroke", config.leftColor)
-            .attr("stroke-width", 2)
-            .attr("d", lineLeft);
+                .attr("fill", "none")
+                .attr("stroke", config.leftColor)
+                .attr("stroke-width", 2)
+                .attr("d", lineLeft);
 
-        // 2. Right Data (Rt)
-        if (state.showUncertainty) {
+            // 2. Right Data (Rt)
+            if (state.showUncertainty) {
+                svg.append("path")
+                    .datum(rtData)
+                    .attr("fill", COLORS.rt)
+                    .attr("fill-opacity", 0.15) // Subtle
+                    .attr("d", areaRight);
+            }
+
             svg.append("path")
                 .datum(rtData)
-                .attr("fill", COLORS.rt)
-                .attr("fill-opacity", 0.15) // Subtle
-                .attr("d", areaRight);
-        }
+                .attr("fill", "none")
+                .attr("stroke", COLORS.rt)
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5")
+                .attr("d", lineRight);
 
-        svg.append("path")
-            .datum(rtData)
-            .attr("fill", "none")
-            .attr("stroke", COLORS.rt)
-            .attr("stroke-width", 2)
-            .attr("stroke-dasharray", "5,5")
-            .attr("d", lineRight);
-
-        // 3. Rt = 1 Reference Line
-        svg.append("line")
-            .attr("class", "reference-line")
-            .attr("x1", 0)
-            .attr("x2", innerWidth)
-            .attr("y1", yRightScale(1))
-            .attr("y2", yRightScale(1));
+            // 3. Rt = 1 Reference Line
+            svg.append("line")
+                .attr("class", "reference-line")
+                .attr("x1", 0)
+                .attr("x2", innerWidth)
+                .attr("y1", yRightScale(1))
+                .attr("y2", yRightScale(1));
 
 
-        // --- Interactive Overlay (Tooltip) ---
-        const focus = svg.append("g")
-            .style("display", "none");
+            // --- Interactive Overlay (Tooltip) ---
+            const focus = svg.append("g")
+                .style("display", "none");
 
-        // Vertical Line
-        focus.append("line")
-            .attr("id", "hover-line")
-            .attr("stroke", "#999")
-            .attr("stroke-width", 1)
-            .attr("stroke-dasharray", "3,3")
-            .attr("y1", 0)
-            .attr("y2", innerHeight);
+            // Vertical Line
+            focus.append("line")
+                .attr("id", "hover-line")
+                .attr("stroke", "#999")
+                .attr("stroke-width", 1)
+                .attr("stroke-dasharray", "3,3")
+                .attr("y1", 0)
+                .attr("y2", innerHeight);
 
-        // Overlay Rect
-        svg.append("rect")
-            .attr("class", "overlay")
-            .attr("width", innerWidth)
-            .attr("height", innerHeight)
-            .style("fill", "none")
-            .style("pointer-events", "all")
-            .on("mouseover", () => focus.style("display", null))
-            .on("mouseout", () => {
-                focus.style("display", "none");
-                d3.select("#tooltip").style("opacity", 0);
-            })
-            .on("mousemove", mousemove);
+            // Overlay Rect
+            svg.append("rect")
+                .attr("class", "overlay")
+                .attr("width", innerWidth)
+                .attr("height", innerHeight)
+                .style("fill", "none")
+                .style("pointer-events", "all")
+                .on("mouseover", () => focus.style("display", null))
+                .on("mouseout", () => {
+                    focus.style("display", "none");
+                    d3.select("#tooltip").style("opacity", 0);
+                })
+                .on("mousemove", mousemove);
 
-        const bisectDate = d3.bisector(d => d.d).left;
+            const bisectDate = d3.bisector(d => d.d).left;
 
-        function mousemove(event) {
-            const x0 = xScale.invert(d3.pointer(event)[0]);
-            const i = bisectDate(leftData, x0, 1);
-            if (i >= leftData.length) return;
-            
-            const d0 = leftData[i - 1];
-            const d1 = leftData[i];
-            const dLeft = x0 - d0.d > d1.d - x0 ? d1 : d0;
-            
-            // Find matching Rt data point by Date
-            // Since rtData might have different gaps or same dates, usually assuming aligned
-            // We use simple find or bisect if sorted. 
-            // They are sorted. Bisect again on Rt data.
-            const j = bisectDate(rtData, dLeft.d, 1);
-            let dRt = null;
-            if (j < rtData.length) {
-                const r0 = rtData[j - 1];
-                const r1 = rtData[j];
-                // Check which one matches exact date or closest
-                if (r1 && r1.d.getTime() === dLeft.d.getTime()) dRt = r1;
-                else if (r0 && r0.d.getTime() === dLeft.d.getTime()) dRt = r0;
-            }
-            if (!dRt) return; // Should not happen if data is aligned
+            function mousemove(event) {
+                const x0 = xScale.invert(d3.pointer(event)[0]);
+                const i = bisectDate(leftData, x0, 1);
+                if (i >= leftData.length) return;
 
-            // Update Vertical Line
-            const xPos = xScale(dLeft.d);
-            focus.select("#hover-line")
-                .attr("x1", xPos)
-                .attr("x2", xPos);
+                const d0 = leftData[i - 1];
+                const d1 = leftData[i];
+                const dLeft = x0 - d0.d > d1.d - x0 ? d1 : d0;
 
-            // Update Tooltip
-            const tooltip = d3.select("#tooltip");
-            const formatDate = d3.timeFormat("%Y-%m-%d");
-            const curDate = formatDate(dLeft.d);
-            
-            const fmtVal = d3.format(".2f");
+                // Find matching Rt data point by Date
+                // Since rtData might have different gaps or same dates, usually assuming aligned
+                // We use simple find or bisect if sorted. 
+                // They are sorted. Bisect again on Rt data.
+                const j = bisectDate(rtData, dLeft.d, 1);
+                let dRt = null;
+                if (j < rtData.length) {
+                    const r0 = rtData[j - 1];
+                    const r1 = rtData[j];
+                    // Check which one matches exact date or closest
+                    if (r1 && r1.d.getTime() === dLeft.d.getTime()) dRt = r1;
+                    else if (r0 && r0.d.getTime() === dLeft.d.getTime()) dRt = r0;
+                }
+                if (!dRt) return; // Should not happen if data is aligned
 
-            tooltip.html(`
+                // Update Vertical Line
+                const xPos = xScale(dLeft.d);
+                focus.select("#hover-line")
+                    .attr("x1", xPos)
+                    .attr("x2", xPos);
+
+                // Update Tooltip
+                const tooltip = d3.select("#tooltip");
+                const formatDate = d3.timeFormat("%Y-%m-%d");
+                const curDate = formatDate(dLeft.d);
+
+                const fmtVal = d3.format(".2f");
+
+                tooltip.html(`
                 <table class="tooltip-table">
                     <tr><td>日期</td><td>${curDate}</td></tr>
                     <tr><td style="color:${config.leftColor}">${config.leftTitle.split("（")[0]} 中位數</td><td>${fmtVal(dLeft.median)}</td></tr>
@@ -629,27 +649,28 @@
                 </table>
             `);
 
-            // Position Logic
-            const pageX = event.pageX;
-            const pageY = event.pageY;
-            // Avoid edge overflow
-            const tooltipNode = document.getElementById('tooltip');
-            const tooltipRect = tooltipNode.getBoundingClientRect();
-            
-            let left = pageX + 15;
-            let top = pageY + 15;
+                // Position Logic
+                const pageX = event.pageX;
+                const pageY = event.pageY;
+                // Avoid edge overflow
+                const tooltipNode = document.getElementById('tooltip');
+                const tooltipRect = tooltipNode.getBoundingClientRect();
 
-            if (left + tooltipRect.width > window.innerWidth) {
-                left = pageX - tooltipRect.width - 15;
+                let left = pageX + 15;
+                let top = pageY + 15;
+
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = pageX - tooltipRect.width - 15;
+                }
+
+                tooltip
+                    .style("left", left + "px")
+                    .style("top", top + "px")
+                    .style("opacity", 1);
             }
-
-            tooltip
-                .style("left", left + "px")
-                .style("top", top + "px")
-                .style("opacity", 1);
         }
-    }
-</script>
+    </script>
 
 </body>
+
 </html>
