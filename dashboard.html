@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COVID-19 Forecast Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #333;
+            --secondary-color: #666;
+            --accent-blue: #4682b4;
+            /* Cases/Deaths color */
+            --accent-red: #d95f02;
+            /* Rt color */
+            --grid-color: #e0e0e0;
+            --bg-color: #f9f9f9;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0.5em 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f0f2f5;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        /* Chart Layout */
+        .figure-container {
+            margin-bottom: 50px;
+        }
+
+        .figure-title {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .chart-wrapper {
+            position: relative;
+        }
+
+        /* SVG Styles */
+        .axis path,
+        .axis line {
+            stroke: #ccc;
+        }
+
+        .grid line {
+            stroke: var(--grid-color);
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+
+        .axis-label {
+            font-size: 12px;
+            fill: var(--secondary-color);
+        }
+
+        .legend {
+            font-size: 14px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            pointer-events: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-size: 13px;
+            display: none;
+            z-index: 100;
+        }
+
+        .tooltip-date {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 3px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            line-height: 1.4;
+        }
+
+        /* Series Styling */
+        .line-main {
+            fill: none;
+            stroke: var(--accent-blue);
+            stroke-width: 2px;
+        }
+
+        .area-main {
+            fill: var(--accent-blue);
+            opacity: 0.2;
+        }
+
+        .line-rt {
+            fill: none;
+            stroke: var(--accent-red);
+            stroke-width: 2px;
+            stroke-dasharray: 4, 4;
+        }
+
+        .area-rt {
+            fill: var(--accent-red);
+            opacity: 0.15;
+        }
+
+        .rt-ref-line {
+            fill: none;
+            stroke: #999;
+            stroke-width: 1.5px;
+            stroke-dasharray: 2, 2;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .loading-msg {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error-msg {
+            color: #d32f2f;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="csvFile">載入 CSV 檔案</label>
+                <input type="file" id="csvFile" accept=".csv">
+            </div>
+            <div class="control-group" style="flex-direction: row; align-items: center; margin-top: 24px;">
+                <input type="checkbox" id="showUncertainty" checked>
+                <label for="showUncertainty" style="margin-bottom: 0;">顯示不確定區間</label>
+            </div>
+        </div>
+
+        <div id="dashboard-content">
+            <div class="loading-msg">請選擇 "Rt_ICU_based-RW_gaussian_order-1.csv" 檔案以開始。</div>
+        </div>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <script>
+        // --- Configuration ---
+        const MARGIN = { top: 30, right: 60, bottom: 30, left: 60 };
+        const PANEL_Height = 300;
+        const PANEL_SPACING = 40;
+        const TOTAL_WIDTH = 1100; // Inner width will be subtracted
+        const INNER_WIDTH = TOTAL_WIDTH - MARGIN.left - MARGIN.right;
+
+        // State
+        let rawData = [];
+        let processedData = {};
+        let isUncertaintyVisible = true;
+
+        // Elements
+        const fileInput = document.getElementById('csvFile');
+        const checkbox = document.getElementById('showUncertainty');
+        const dashboard = document.getElementById('dashboard-content');
+        const tooltip = document.getElementById('tooltip');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileUpload);
+        checkbox.addEventListener('change', (e) => {
+            isUncertaintyVisible = e.target.checked;
+            updateCharts();
+        });
+
+        // Auto-load on startup
+        init();
+
+        async function init() {
+            const defaultFile = "Rt_ICU_based-RW_gaussian_order-1.csv";
+            try {
+                console.log(`Attempting to fetch default file: ${defaultFile}`);
+                const response = await fetch(defaultFile);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${defaultFile}: ${response.status} ${response.statusText}`);
+                }
+                const text = await response.text();
+                parseAndRender(text);
+            } catch (err) {
+                console.warn("Auto-load failed (this is expected if opening local HTML file without server):", err);
+                // Fallback to waiting for user input
+                dashboard.innerHTML = `<div class="loading-msg">無法自動載入預設檔案 (可能是因為本機開啟檔案)。<br>請手動選擇 "Rt_ICU_based-RW_gaussian_order-1.csv" 以開始。</div>`;
+            }
+        }
+
+        /**
+         * File Upload Handler
+         */
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                parseAndRender(text);
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Common parse and render flow
+         */
+        function parseAndRender(csvText) {
+            try {
+                parseData(csvText);
+                renderDashboard();
+            } catch (err) {
+                console.error(err);
+                dashboard.innerHTML = `<div class="error-msg">讀取或解析 CSV 錯誤: ${err.message}</div>`;
+            }
+        }
+
+        /**
+         * Data Parser
+         */
+        function parseData(csvText) {
+            // Parse CSV
+            const data = d3.csvParse(csvText, (d) => {
+                return {
+                    var: d.var,
+                    date: d3.timeParse("%Y-%m-%d")(d.d),
+                    median: +d.median,
+                    lower: +d.lower,
+                    upper: +d.upper
+                };
+            });
+
+            // Filter valid dates
+            const validData = data.filter(d => d.date != null);
+
+            // Group by 'var'
+            processedData = {
+                Rt: validData.filter(d => d.var === 'Rt').sort((a, b) => a.date - b.date),
+                cases_predicted: validData.filter(d => d.var === 'cases_predicted').sort((a, b) => a.date - b.date),
+                deaths_predicted: validData.filter(d => d.var === 'deaths_predicted').sort((a, b) => a.date - b.date),
+                cases_reported_forecasted: validData.filter(d => d.var === 'cases_reported_forecasted').sort((a, b) => a.date - b.date),
+                deaths_reported_forecasted: validData.filter(d => d.var === 'deaths_reported_forecasted').sort((a, b) => a.date - b.date),
+            };
+
+            // Determine global date range (based on Rt availability only)
+            // const allDates = validData.map(d => d.date);
+            // processedData.dateExtent = d3.extent(allDates);
+            processedData.dateExtent = d3.extent(processedData.Rt, d => d.date);
+        }
+
+        /**
+         * Main Render Function
+         */
+        function renderDashboard() {
+            dashboard.innerHTML = ''; // Clear processing/waiting message
+
+            // -----------------------
+            // Figure 1: Onset-based
+            // -----------------------
+            createFigure({
+                id: 'fig1',
+                title: '發病日基準：病例與死亡（右軸：Rt，含不確定區間）',
+                panel1: {
+                    title: '病例（發病日）',
+                    leftData: processedData.cases_predicted,
+                    rightData: processedData.Rt
+                },
+                panel2: {
+                    title: '死亡（發病日）',
+                    leftData: processedData.deaths_predicted,
+                    rightData: processedData.Rt
+                }
+            });
+
+            // -----------------------
+            // Figure 2: Reported-based
+            // -----------------------
+            createFigure({
+                id: 'fig2',
+                title: '通報日基準：通報病例與通報死亡（右軸：Rt，含不確定區間）',
+                panel1: {
+                    title: '通報病例（通報日）',
+                    leftData: processedData.cases_reported_forecasted,
+                    rightData: processedData.Rt
+                },
+                panel2: {
+                    title: '通報死亡（通報日）',
+                    leftData: processedData.deaths_reported_forecasted,
+                    rightData: processedData.Rt
+                }
+            });
+
+            updateVisibility();
+        }
+
+        function createFigure(config) {
+            const container = document.createElement('div');
+            container.className = 'figure-container';
+
+            const title = document.createElement('h2');
+            title.className = 'figure-title';
+            title.textContent = config.title;
+            container.appendChild(title);
+
+            // Calculate SVG height: 2 panels + margins + spacing
+            const totalHeight = (PANEL_Height * 2) + PANEL_SPACING + MARGIN.top + MARGIN.bottom;
+
+            // Create SVG
+            const svg = d3.select(container)
+                .append('svg')
+                .attr('width', TOTAL_WIDTH)
+                .attr('height', totalHeight)
+                .attr('viewBox', `0 0 ${TOTAL_WIDTH} ${totalHeight}`);
+
+            // Define clip path
+            svg.append("defs").append("clipPath")
+                .attr("id", "clip")
+                .append("rect")
+                .attr("width", INNER_WIDTH)
+                .attr("height", PANEL_Height);
+
+            // --- Panel 1 (Top) ---
+            drawPanel(svg, config.panel1, 0);
+
+            // --- Panel 2 (Bottom) ---
+            drawPanel(svg, config.panel2, PANEL_Height + PANEL_SPACING);
+
+            dashboard.appendChild(container);
+        }
+
+        function drawPanel(svg, dataConfig, yOffset) {
+            const g = svg.append('g')
+                .attr('transform', `translate(${MARGIN.left}, ${MARGIN.top + yOffset})`);
+
+            // X Scale (Date)
+            const x = d3.scaleTime()
+                .domain(processedData.dateExtent)
+                .range([0, INNER_WIDTH]);
+
+            // Y Scale Left (Main Metric)
+            // 1. Filter data to match the current X-axis domain (Visible range)
+            const [minDate, maxDate] = processedData.dateExtent;
+            const visibleLeftData = dataConfig.leftData.filter(d => d.date >= minDate && d.date <= maxDate);
+
+            // 2. Calculate Max values from VISIBLE data only
+            const maxMedian = d3.max(visibleLeftData, d => d.median) || 0; // Fallback to 0 if empty
+            const maxUpper = d3.max(visibleLeftData, d => d.upper) || 0;
+
+            // 3. Apply the 2/3 height rule logic
+            const yMax = Math.min(maxUpper * 1.1, maxMedian * 1.5);
+
+            const yLeft = d3.scaleLinear()
+                .domain([0, yMax])
+                .range([PANEL_Height, 0]);
+
+            // Y Scale Right (Rt)
+            const yRight = d3.scaleLinear()
+                .domain([0, 4]) // Fixed domain for Rt as usually low, but can adjust dynamically if needed
+                .range([PANEL_Height, 0]);
+
+            // Adjust Rt max if data exceeds 4
+            const maxRt = d3.max(dataConfig.rightData, d => d.upper);
+            if (maxRt > 4) yRight.domain([0, maxRt * 1.1]);
+
+
+            // --- Axes ---
+            // X Axis
+            g.append('g')
+                .attr('transform', `translate(0, ${PANEL_Height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
+                .attr("transform", "rotate(-15)");
+
+            // Left Axis
+            g.append('g')
+                .call(d3.axisLeft(yLeft).ticks(5))
+                .call(g => g.selectAll(".tick line").clone()
+                    .attr("x2", INNER_WIDTH)
+                    .attr("stroke-opacity", 0.1)); // Grid line
+
+            // Right Axis
+            g.append('g')
+                .attr('transform', `translate(${INNER_WIDTH}, 0)`)
+                .call(d3.axisRight(yRight).ticks(5));
+
+            // Panel Title
+            g.append('text')
+                .attr('x', 10)
+                .attr('y', 20)
+                .attr('font-weight', 'bold')
+                .text(dataConfig.title);
+
+            // --- Data Rendering (Clipped) ---
+            const content = g.append('g').attr("clip-path", "url(#clip)");
+
+            // 1. Plot Left Metric (Solid Line + Area)
+            const areaLeft = d3.area()
+                .x(d => x(d.date))
+                .y0(d => yLeft(d.lower))
+                .y1(d => yLeft(d.upper));
+
+            const lineLeft = d3.line()
+                .x(d => x(d.date))
+                .y(d => yLeft(d.median));
+
+            content.append('path')
+                .datum(dataConfig.leftData)
+                .attr('class', 'area-main uncertainty-band')
+                .attr('d', areaLeft);
+
+            content.append('path')
+                .datum(dataConfig.leftData)
+                .attr('class', 'line-main')
+                .attr('d', lineLeft);
+
+            // 2. Plot Right Metric (Rt) (Dashed Line + Area + Ref Line)
+            const areaRt = d3.area()
+                .x(d => x(d.date))
+                .y0(d => yRight(d.lower))
+                .y1(d => yRight(d.upper));
+
+            const lineRt = d3.line()
+                .x(d => x(d.date))
+                .y(d => yRight(d.median));
+
+            content.append('path')
+                .datum(dataConfig.rightData) // Using Rt data
+                .attr('class', 'area-rt uncertainty-band')
+                .attr('d', areaRt);
+
+            content.append('line')
+                .attr('class', 'rt-ref-line')
+                .attr('x1', 0)
+                .attr('x2', INNER_WIDTH)
+                .attr('y1', yRight(1))
+                .attr('y2', yRight(1));
+
+            content.append('path')
+                .datum(dataConfig.rightData)
+                .attr('class', 'line-rt')
+                .attr('d', lineRt);
+
+
+            // --- Interaction Overlay ---
+            // Invisible rect to capture mouse events across the whole panel
+            const bisector = d3.bisector(d => d.date).left;
+
+            g.append('rect')
+                .attr('class', 'overlay')
+                .attr('width', INNER_WIDTH)
+                .attr('height', PANEL_Height)
+                .style('opacity', 0)
+                .on('mousemove', function (event) {
+                    const x0 = x.invert(d3.pointer(event)[0]);
+
+                    // Find closest data point in Left Data
+                    const iL = bisector(dataConfig.leftData, x0, 1);
+                    const d0L = dataConfig.leftData[iL - 1];
+                    const d1L = dataConfig.leftData[iL];
+                    // Handle edge cases
+                    let dL = (!d0L || !d1L) ? (d0L || d1L) : (x0 - d0L.date > d1L.date - x0 ? d1L : d0L);
+
+                    // Find closest data point in Right Data (Rt)
+                    const iR = bisector(dataConfig.rightData, x0, 1);
+                    const d0R = dataConfig.rightData[iR - 1];
+                    const d1R = dataConfig.rightData[iR];
+                    let dR = (!d0R || !d1R) ? (d0R || d1R) : (x0 - d0R.date > d1R.date - x0 ? d1R : d0R);
+
+                    if (!dL && !dR) return;
+
+                    // Show Tooltip
+                    const currentData = dL || dR; // Use available date for header
+                    const dateStr = d3.timeFormat("%Y-%m-%d")(currentData.date);
+
+                    let html = `<span class="tooltip-date">${dateStr}</span>`;
+
+                    if (dL) {
+                        html += `
+                        <div class="tooltip-row" style="color:var(--accent-blue)">
+                            <span>${dataConfig.title}:</span>
+                            <span>${dL.median.toFixed(1)} [${dL.lower.toFixed(1)}, ${dL.upper.toFixed(1)}]</span>
+                        </div>
+                    `;
+                    }
+
+                    if (dR) {
+                        html += `
+                        <div class="tooltip-row" style="color:var(--accent-red)">
+                            <span>Rt:</span>
+                            <span>${dR.median.toFixed(2)} [${dR.lower.toFixed(2)}, ${dR.upper.toFixed(2)}]</span>
+                        </div>
+                    `;
+                    }
+
+                    tooltip.style.display = 'block';
+                    tooltip.innerHTML = html;
+
+                    // Position tooltip near cursor but prevent overflow
+                    const tooltipWidth = tooltip.offsetWidth;
+                    let left = event.pageX + 15;
+                    if (left + tooltipWidth > window.innerWidth) {
+                        left = event.pageX - tooltipWidth - 15;
+                    }
+
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = (event.pageY - 20) + 'px';
+
+                    // Optional: Draw vertical guide line
+                    g.select('.guide-line').remove();
+                    g.append('line')
+                        .attr('class', 'guide-line')
+                        .attr('x1', x(currentData.date))
+                        .attr('x2', x(currentData.date))
+                        .attr('y1', 0)
+                        .attr('y2', PANEL_Height)
+                        .attr('stroke', '#aaa')
+                        .attr('stroke-dasharray', '3,3')
+                        .attr('pointer-events', 'none');
+
+                })
+                .on('mouseout', function () {
+                    tooltip.style.display = 'none';
+                    g.select('.guide-line').remove();
+                });
+        }
+
+        function updateCharts() {
+            // Just toggle visibility class
+            updateVisibility();
+        }
+
+        function updateVisibility() {
+            d3.selectAll('.uncertainty-band')
+                .transition()
+                .duration(300)
+                .style('opacity', isUncertaintyVisible ? null : 0);
+
+            // Restore correct opacity when visible because 'null' might not work if explicit opacity was set in CSS
+            // The CSS sets opacity for these classes. When hiding, we set to 0. When showing, we remove the inline style to let CSS take over.
+            if (isUncertaintyVisible) {
+                d3.selectAll('.area-main.uncertainty-band').style('opacity', 0.2);
+                d3.selectAll('.area-rt.uncertainty-band').style('opacity', 0.15);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
